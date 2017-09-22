@@ -1,0 +1,32 @@
+(def inital-state
+  {:tiles [[:1 :2 :3]
+           [:4 :empty :5]
+           [:6 :7 :8]]
+   :empty-tile [1 1]})
+
+(def target-state
+  {:tiles [[:empty :1 :2]
+           [:3 :4 :5]
+           [:6 :7 :8]]
+   :empty-tile [0 0]})
+
+(defn swap-tiles [state [x-from y-from] [x-to y-to]]
+  (let [from (get-in state [:tiles x-from y-from])
+        to (get-in state [:tiles x-to y-to])]
+    (-> state
+        (assoc-in [:tiles x-from y-from] to)
+        (assoc-in [:tiles x-to y-to] from))))
+
+(defn neighbours-cords [[empty-x empty-y]]
+  (let [inital-states [[(- empty-x 1) (- empty-y 1)]
+                       [(- empty-x 1) (+ empty-y 1)]
+                       [(+ empty-x 1) (- empty-y 1)]
+                       [(+ empty-x 1) (+ empty-y 1)]]]
+    (filter (fn [[x y]] (and (and (<= 0 x)
+                                  (<= x 2))
+                             (and (<= 0 y)
+                                  (<= y 2))))
+            inital-states)))
+
+(defn get-next-states [state]
+  )
