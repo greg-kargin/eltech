@@ -1,4 +1,4 @@
-(def initial-state
+(def initial-statep
   {:path []
    :tiles [[:6 :2 :8]
            [:4 :1 :7]
