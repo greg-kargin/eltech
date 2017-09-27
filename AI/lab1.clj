@@ -1,4 +1,4 @@
-(def initial-state
+(def initial-statep
   {:path []
    :tiles [[:6 :2 :8]
            [:4 :1 :7]
@@ -55,13 +55,12 @@
                  (conj visited (:tiles current-state))))))))
 
 (defn fixed-depth-dfs [stack target-state visited max-depth]
-  (prn stack)
   (let [[current-state cur-depth] (first stack)
         tail (next stack)]
-    (if (or (empty? stack)
-            (= cur-depth max-depth))
+    (if (empty? stack)
       :failed-search
-      (if (contains? visited (:tiles current-state))
+      (if (or (contains? visited (:tiles current-state))
+              (= cur-depth max-depth))
         (recur tail target-state visited max-depth)
         (if (= (:tiles current-state) (:tiles target-state))
           (:path current-state)
@@ -71,7 +70,7 @@
                  max-depth))))))
 
 (defn iterative-dfs-solve [stack target-state visited]
-  (let [max 2] ;; max possible
+  (let [max 1000] ;; max possible
     (loop [depth 0]
       (let [res (fixed-depth-dfs stack target-state visited depth)]
         (cond (< max depth)
