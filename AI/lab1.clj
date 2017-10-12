@@ -38,64 +38,43 @@
             :path (conj (:path state) direction)})
          n-cords)))
 
-(def a (atom 0))
+(def dfs-heuristic (constantly 0))
 
-(defn bfs-solve [queue target-state visited]
-  (swap! a inc)
-  (let [current-state (peek queue)
-        tail (pop queue)]
-    (if (empty? queue)
-      :failed-search
-      (if (contains? visited (:tiles current-state))
-        (recur tail target-state visited)
-        (if (= (:tiles current-state) (:tiles target-state))
-          (:path current-state)
-          (recur (apply conj tail (get-next-states current-state))
-                 target-state
-                 (conj visited (:tiles current-state))))))))
+(defn bfs-heuristic [state _] (count (:path state)))
 
-(defn fixed-depth-dfs [stack target-state visited max-depth]
-  (let [[current-state cur-depth] (first stack)
-        tail (next stack)]
-    (if (empty? stack)
-      :failed-search
-      (if (or (contains? visited (:tiles current-state))
-              (= cur-depth max-depth))
-        (recur tail target-state visited max-depth)
-        (if (= (:tiles current-state) (:tiles target-state))
-          (:path current-state)
-          (recur (apply conj tail (map vector (get-next-states current-state) (repeat (inc cur-depth))))
-                 target-state
-                 (conj visited (:tiles current-state))
-                 max-depth))))))
+(defn misplaced-tiles [state target-state]
+  (let [misplaced-in-row (fn [row row'] (reduce + (map (fn [e e'] (if (not= e e') 1 0)) row row')))]
+    (+ (count (:path state))
+       (reduce + (map misplaced-in-row (:tiles state) (:tiles target-state))))))
 
-(defn iterative-dfs-solve [stack target-state visited]
-  (let [max 1000] ;; max possible
-    (loop [depth 0]
-      (let [res (fixed-depth-dfs stack target-state visited depth)]
-        (cond (< max depth)
-              :failed-search
+(defn new-priority-queue [initial-state target-state picking-function]
+  (let [p-q (java.util.PriorityQueue. (comparator (fn [[s _] [s' _]] (< s s'))))]
+    (.add p-q [(picking-function initial-state target-state) initial-state])
+    p-q))
 
-              (keyword? res)
-              (recur (inc depth))
-
-              :else
-              res)))))
+(defn solve [initial-state target-state picking-function]
+  (let [priority-queue (new-priority-queue initial-state target-state picking-function)]
+    (loop [visited #{}]
+      (if (.isEmpty priority-queue)
+        :failed-search
+        (let [[score current-state] (.poll priority-queue)]
+          (if (contains? visited (:tiles current-state))
+            (recur visited)
+            (if (= (:tiles current-state) (:tiles target-state))
+              (:path current-state)
+              (let [next-states (get-next-states current-state)
+                    next-states-with-score (map (fn [state]
+                                                  [(picking-function state
+                                                                     target-state)
+                                                   state])
+                                                next-states)]
+                (doall (map (fn [s] (.add priority-queue s)) next-states-with-score))
+                (recur (conj visited (:tiles current-state)))))))))))
 
 (comment
 
-  (fixed-depth-dfs (list [initial-state 0])
-                   target-state
-                   #{}
-                   2)
+  (solve initial-state target-state misplaced-tiles)
 
-  (iterative-dfs-solve (list [initial-state 0])
-                       target-state
-                       #{})
-
-  (bfs-solve (-> (clojure.lang.PersistentQueue/EMPTY)
-                 (conj initial-state))
-             target-state
-             #{})
+  (solve initial-state target-state bfs-heuristic)
 
   )
