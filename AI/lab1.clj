@@ -47,6 +47,23 @@
     (+ (count (:path state))
        (reduce + (map misplaced-in-row (:tiles state) (:tiles target-state))))))
 
+(defn abs [n] (max n (- n)))
+
+(defn manhattan [state target-state]
+  (let [tiles (flatten (:tiles state))
+        target-tiles (flatten (:tiles target-state))]
+    (transduce (map-indexed (fn [i v]
+                              (let [j (.indexOf target-tiles v)
+                                    row-i (quot i 3)
+                                    row-j (quot j 3)
+                                    col-i (rem i 3)
+                                    col-j (rem j 3)]
+                                (+ (abs (- row-i row-j))
+                                   (abs (- col-i col-j))))))
+               +
+               0
+               tiles)))
+
 (defn new-priority-queue [initial-state target-state picking-function]
   (let [p-q (java.util.PriorityQueue. (comparator (fn [[s _] [s' _]] (< s s'))))]
     (.add p-q [(picking-function initial-state target-state) initial-state])
@@ -75,6 +92,10 @@
 
   (solve initial-state target-state misplaced-tiles)
 
+  (solve initial-state target-state manhattan)
+
   (solve initial-state target-state bfs-heuristic)
+
+  (solve initial-state target-state dfs-heuristic)
 
   )
